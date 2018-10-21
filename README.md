@@ -11,7 +11,9 @@ You can use this Json Object to send by email or for any other things that you n
 
 Download
 -------------------
-By Gradle:
+You can download a **arr** from [maven releases][3] page.
+
+Or use Gradle:
 
 ```groovy
 repositories {
@@ -30,6 +32,7 @@ How do I use RealmExport?
 -------------------
 You can use `RealmExport` in any part of your code, but it's recommended that you use it in a background task.
 
+#### Simple use
 ```java
 // Export to Json:
 JsonObject dbJson = RealmExport.init((new RealmConfiguration.Builder()).build()).toJson();  
@@ -41,6 +44,18 @@ JsonObject dbJson = RealmExport.init((new RealmConfiguration.Builder()).build())
 ```
 > Not forget replace "(new RealmConfiguration.Builder()).build()" for your specific Realm Configuration
 
+#### Advanced use
+```java
+// You can use different initializations:
+RealmExport.init(RealmConfiguration configuration, String nullValue, DateFormat dateTimeFormatter)
+RealmExport.init(RealmConfiguration configuration, String nullValue)
+```
+
+#### Default values
+```java
+// For nullValue: "[null]"
+// For dateTimeFormatter: SimpleDateFormat.getDateTimeInstance(SimpleDateFormat.LONG, SimpleDateFormat.LONG)
+```
 Deployment
 ------
 1. update version information
@@ -59,3 +74,4 @@ BSD, part MIT and Apache 2.0. See the [LICENSE][2] file for details.
 
 [1]: https://github.com/softotalss/realmexport/releases
 [2]: https://github.com/softotalss/RealmExport/blob/master/LICENSE
+[3]: https://github.com/softotalss/RealmExport/tree/master/maven-repository/com/github/softotalss/realm_export
