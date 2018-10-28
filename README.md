@@ -11,7 +11,7 @@ You can use this Json Object to send by email or for any other things that you n
 
 Download
 -------------------
-You can download a **arr** from [maven releases][3] page.
+You can download an **arr** from [maven releases][3] page.
 
 Or use Gradle:
 
