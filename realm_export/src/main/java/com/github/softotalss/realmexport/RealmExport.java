@@ -20,11 +20,16 @@ import java.io.FileWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Set;
 
+import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmFieldType;
+import io.realm.RealmModel;
+import io.realm.RealmResults;
 import io.realm.internal.OsList;
 import io.realm.internal.OsSharedRealm;
+import io.realm.internal.RealmObjectProxy;
 import io.realm.internal.Row;
 import io.realm.internal.Table;
 
@@ -62,10 +67,9 @@ public class RealmExport {
     public JsonObject toJson() {
         JsonObject dbJson = new JsonObject();
 
-        final OsSharedRealm sharedRealm = OsSharedRealm.getInstance(configuration);
+        final OsSharedRealm sharedRealm = OsSharedRealm.getInstance(configuration, OsSharedRealm.VersionID.LIVE);
         try {
-            for (int i = 0; i < sharedRealm.size(); i++) {
-                String tableName = sharedRealm.getTableName(i);
+            for (String tableName : sharedRealm.getTablesNames()) {
                 if (tableName.startsWith(TABLE_PREFIX)) {
                     dbJson.add(tableName, flattenRowsJson(sharedRealm.getTable(tableName)));
                 }
@@ -151,7 +155,7 @@ public class RealmExport {
         }
 
         long getIndex() {
-            return row.getIndex();
+            return row.getObjectKey();
         }
 
         RealmExportFieldType getColumnType(long columnIndex) {
@@ -265,20 +269,33 @@ public class RealmExport {
             return row.getValueList(columnIndex, fieldType);
         }
     }
+
+    private Class<? extends RealmModel> getRealmModel(String name) {
+        Set<Class<? extends RealmModel>> modelsRM = Realm.getDefaultInstance().getConfiguration().getRealmObjectClasses();
+        for (Class<? extends RealmModel> model : modelsRM) {
+            if (model.getSimpleName().equals(name)) {
+                return model;
+            }
+        }
+
+        return null;
+    }
+
     private JsonArray flattenRowsJson(Table table) {
         final JsonArray jsonArray = new JsonArray();
-        long numColumns = table.getColumnCount();
 
-        final RowFetcher rowFetcher = RowFetcher.getInstance();
-        final long tableSize = table.size();
-        for (long index = 0; index < tableSize; index++) {
-            final RowWrapper rowData = RowWrapper.wrap(rowFetcher.getRow(table, index));
+        Realm realm = Realm.getDefaultInstance();
+        realm.refresh();
+        RealmResults<RealmModel> data = (RealmResults<RealmModel>) realm.where(getRealmModel(table.getClassName())).findAll();
+
+        for (RealmModel dataRow : data) {
+            Row row = ((RealmObjectProxy) dataRow).realmGet$proxyState().getRow$realm();
+            final RowWrapper rowData = RowWrapper.wrap(row);
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("index", rowData.getIndex());
 
-            String columnName;
-            for (int column = 0; column < numColumns; column++) {
-                columnName = table.getColumnName(column);
+            for (String columnName : table.getColumnNames()) {
+                long column = table.getColumnKey(columnName);
                 switch (rowData.getColumnType(column)) {
                     case INTEGER:
                         if (rowData.isNull(column)) {
@@ -396,7 +413,7 @@ public class RealmExport {
             if (pos != 0) {
                 sb.append(',');
             }
-            sb.append(linkList.getUncheckedRow(pos).getIndex());
+            sb.append(linkList.getUncheckedRow(pos).getObjectKey());
         }
 
         sb.append("}");
